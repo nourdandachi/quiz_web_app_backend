@@ -1,40 +1,41 @@
 <?php
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
 require_once '../config/db.php';
 
-$data = json_decode(file_get_contents("php://input"), true);
 
-if (isset($data['name']) && isset($data['email']) && isset($data['password'])) {
-    $name = $data['name'];
-    $email = $data['email'];
-    $password = $data['password'];
+if (!empty($_POST['name']) && !empty($_POST['email']) && !empty($_POST['password'])) {
+    $name = $_POST['name'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
 
     $checkQuery = "SELECT * FROM users WHERE email = ?";
-    $stmt = mysqli_prepare($conn, $checkQuery);
-    mysqli_stmt_bind_param($stmt, "s", $email);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
+    $stmt = $conn->prepare($checkQuery);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    if (mysqli_num_rows($result) > 0) {
+    if ($result->num_rows > 0) {
         echo json_encode(["status" => "error", "message" => "Email already exists!"]);
     } else {
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-
         $insertQuery = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
-        $stmt = mysqli_prepare($conn, $insertQuery);
-        mysqli_stmt_bind_param($stmt, "sss", $name, $email, $passwordHash);
+        $stmt = $conn->prepare($insertQuery);
+        $stmt->bind_param("sss", $name, $email, $passwordHash);
 
-        if (mysqli_stmt_execute($stmt)) {
+        if ($stmt->execute()) {
             echo json_encode(["status" => "success", "message" => "User registered successfully!"]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Failed to register user."]);
+            echo json_encode(["status" => "error", "message" => "Database insert failed."]);
         }
     }
 
-    mysqli_stmt_close($stmt);
+    $stmt->close();
 } else {
-    echo json_encode(["status" => "error", "message" => "Missing required fields."]);
+    echo json_encode(["status" => "error", "message"=> "Missing required fields."]);
 }
 
-mysqli_close($conn);
+$conn->close();
 ?>
