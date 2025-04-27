@@ -9,10 +9,10 @@ require_once '../config/db.php';
 if (isset($_GET['user_id'])) {
     $user_id = intval($_GET['user_id']);
 
-    $query = "SELECT s.id, q.title AS quiz_title, s.score
-              FROM scores s
-              JOIN quizzes q ON s.quiz_id = q.id
-              WHERE s.user_id = ?";
+    $query = "SELECT s.id, s.quiz_id, q.title AS quiz_title, s.score, s.total_questions
+          FROM scores s
+          JOIN quizzes q ON s.quiz_id = q.id
+          WHERE s.user_id = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
